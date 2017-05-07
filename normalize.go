@@ -83,7 +83,7 @@ var httpClient *http.Client = &http.Client{
 	Timeout: time.Duration(5 * time.Second),
 }
 
-func Normalize(email string, optionsPtr *Option) string {
+func Normalize(email string, optionsPtr *Option, callback chan string) string {
 	email = strings.ToLower(strings.Trim(email, " "))
 
 	emailParts := strings.Split(email, "@")
@@ -121,53 +121,61 @@ func Normalize(email string, optionsPtr *Option) string {
 	}
 
 	if options.DetectProvider {
-		url := fmt.Sprintf("%s?url=%s", "http://enclout.com/api/v1/dns/show.json", domain)
-		resp, err := httpClient.Get(url)
-		if err != nil {
-			log.Println("err [normalize-email] fetching response from enclout", err)
-			return user + "@" + domain
-		}
-
-		defer resp.Body.Close()
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("err [normalize-email] reading response", err)
-			return user + "@" + domain
-		}
-
-		var data struct {
-			DNSEntries []struct {
-				RData string `json:"RData"`
-				Type  string `json:"Type"`
-			} `json:"dns_entries"`
-		}
-
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			log.Println("err [normalize-email] unmarshaling response", err)
-			return user + "@" + domain
-		}
-
-		for _, dnsEntry := range data.DNSEntries {
-			if dnsEntry.Type == "MX" {
-				r, _ := regexp.Compile("aspmx.*google.*\\.com\\.?$")
-				if r.MatchString(dnsEntry.RData) {
-					user = strings.Split(user, "+")[0]
-					user = strings.Replace(user, ".", "", -1)
-				}
-
-				r, _ = regexp.Compile("\\.messagingengine\\.com\\.?$")
-				if r.MatchString(dnsEntry.RData) {
-					// dots are significant -
-					// https://www.fastmail.com/help/account/changeusername.html
-					user = strings.Split(user, "+")[0]
-				}
-			}
-		}
-
-		return user + "@" + domain
+		go DetectProvider(user, domain, callback)
 	}
 
 	return user + "@" + domain
+}
+
+func DetectProvider(user, domain string, callback chan string) {
+	url := fmt.Sprintf("%s?url=%s", "http://enclout.com/api/v1/dns/show.json", domain)
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		log.Println("err [normalize-email] fetching response from enclout", err)
+		callback <- user + "@" + domain
+		return
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("err [normalize-email] reading response", err)
+		callback <- user + "@" + domain
+		return
+	}
+
+	var data struct {
+		DNSEntries []struct {
+			RData string `json:"RData"`
+			Type  string `json:"Type"`
+		} `json:"dns_entries"`
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Println("err [normalize-email] unmarshaling response", err)
+		callback <- user + "@" + domain
+		return
+	}
+
+	for _, dnsEntry := range data.DNSEntries {
+		if dnsEntry.Type == "MX" {
+			r, _ := regexp.Compile("aspmx.*google.*\\.com\\.?$")
+			if r.MatchString(dnsEntry.RData) {
+				user = strings.Split(user, "+")[0]
+				user = strings.Replace(user, ".", "", -1)
+			}
+
+			r, _ = regexp.Compile("\\.messagingengine\\.com\\.?$")
+			if r.MatchString(dnsEntry.RData) {
+				// dots are significant -
+				// https://www.fastmail.com/help/account/changeusername.html
+				user = strings.Split(user, "+")[0]
+			}
+		}
+	}
+
+	callback <- user + "@" + domain
+	return
 }

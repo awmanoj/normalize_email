@@ -59,7 +59,7 @@ func TestNormalize(t *testing.T) {
 	}
 
 	for input, expected := range testCases {
-		result := Normalize(input, nil)
+		result := Normalize(input, nil, nil)
 		if result != expected {
 			t.Errorf("err got %s, expected %s\n", result, expected)
 		}
@@ -70,7 +70,7 @@ func TestNormalize(t *testing.T) {
 			ForceRemoveDots: true,
 			ForceRemoveTags: true,
 		}
-		result := Normalize(input, &option)
+		result := Normalize(input, &option, nil)
 		if result != expected {
 			t.Errorf("err got %s, expected %s\n", result, expected)
 		}
@@ -81,7 +81,9 @@ func TestNormalize(t *testing.T) {
 			DetectProvider: true,
 		}
 
-		result := Normalize(input, &option)
+		callback := make(chan string)
+		Normalize(input, &option, callback)
+		result := <-callback
 		if result != expected {
 			t.Errorf("err got %s, expected %s\n", result, expected)
 		}
