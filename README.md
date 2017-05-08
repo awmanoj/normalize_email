@@ -19,7 +19,7 @@ normalize-email normalizes email addresses to their canonical form.
 * Yahoo! domains
 
 ## Usage
-
+sync version
 ```go
     ... 
     email := "john123.thomas123+test123@googlemail.com
@@ -27,6 +27,7 @@ normalize-email normalizes email addresses to their canonical form.
     // normalizedEmail == "john123.thomas@gmail.com"
     ...
 ```
+async version for detect provider
 
 ```go
     ... 
