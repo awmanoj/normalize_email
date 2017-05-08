@@ -23,7 +23,17 @@ normalize-email normalizes email addresses to their canonical form.
 ```go
     ... 
     email := "john123.thomas123+test123@googlemail.com
-    normalizedEmail := normalize_email.Normalize(input, nil)
+    normalizedEmail := normalize_email.Normalize(input, nil, nil)
+    // normalizedEmail == "john123.thomas@gmail.com"
+    ...
+```
+
+```go
+    ... 
+    email := "john123.thomas123+test123@googlemail.com
+    callback = make(chan string)
+    _ := normalize_email.Normalize(input, &Option{DetectProvider: true}, callback)
+    normalizedEmail := <- callback
     // normalizedEmail == "john123.thomas@gmail.com"
     ...
 ```
