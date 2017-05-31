@@ -18,24 +18,62 @@ normalize-email normalizes email addresses to their canonical form.
 * Microsoft's outlook.com, hotmail.com, live.com
 * Yahoo! domains
 
+## Sample Normalizations 
+
+```
+		// Gmail dots
+		"a.b.c@gmail.com": "abc@gmail.com",
+		"a.b.c@yahoo.com": "a.b.c@yahoo.com",
+
+		// Google domains
+		"a.b.c@googlemail.com": "abc@gmail.com",
+
+		// Plus
+		"a.b.c+tag@gmail.com": "abc@gmail.com",
+		"a.b.c+tag@yahoo.com": "a.b.c+tag@yahoo.com",
+
+		// Non-standard TLDs
+		"a.b.c+tag@something.co.uk": "a.b.c+tag@something.co.uk",
+
+		// Yahoo!
+		"a.b.c.d+tag@yahoo.com": "a.b.c.d+tag@yahoo.com",
+		"a.b.c-tag@yahoo.com":   "a.b.c@yahoo.com",
+		"a.b.c-tag@yahoo.co.uk": "a.b.c@yahoo.co.uk",
+		"a-b.c-tag@yahoo.ro":    "a@yahoo.ro",
+
+		// Microsoft
+		"a.b.c+tag@outlook.com":   "a.b.c@outlook.com",
+		"a.b.c-tag@hotmail.com":   "a.b.c-tag@hotmail.com",
+		"a.b.c-tag@outlook.co.uk": "a.b.c-tag@outlook.co.uk",
+		"a.b.c+d@live.com":        "a.b.c@live.com",
+
+		// Google Apps for Work
+		"a.b.c+tag@idorecall.com": "a.b.c+tag@idorecall.com",
+```
+
+
 ## Usage
 sync version
 ```go
     ... 
-    email := "john123.thomas123+test123@googlemail.com
-    normalizedEmail := normalize_email.Normalize(input, nil, nil)
-    // normalizedEmail == "john123.thomas@gmail.com"
+    rawEmail := "john123.thomas123+test123@googlemail.com
+    normEmail := normalize_email.Normalize(rawEmail, nil, nil)
+
+    // normEmail == "john123.thomas@gmail.com"
     ...
 ```
 async version for detect provider
 
 ```go
     ... 
-    email := "john123.thomas123+test123@googlemail.com
     callback = make(chan string)
-    _ := normalize_email.Normalize(input, &Option{DetectProvider: true}, callback)
-    normalizedEmail := <- callback
-    // normalizedEmail == "john123.thomas@gmail.com"
+    ... 
+    rawEmail := "john123.thomas123+test123@googlemail.com
+    _ := normalize_email.Normalize(rawEmail, &Option{DetectProvider: true}, callback)
+    ... 
+    normEmail := <- callback
+
+    // normEmail == "john123.thomas@gmail.com"
     ...
 ```
 
